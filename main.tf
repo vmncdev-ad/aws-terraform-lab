@@ -73,3 +73,38 @@ resource "aws_route_table_association" "public" {
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
+
+variable "mi_ip" {
+  description = "IP desde la que se permite SSH (CIDR)"
+  type        = string
+}
+
+resource "aws_key_pair" "lab" {
+  key_name   = "lab-key"
+  public_key = file(pathexpand("~/.ssh/aws-lab.pub"))
+}
+
+resource "aws_security_group" "ssh" {
+  name        = "lab-ssh"
+  description = "SSH solo desde mi IP"
+  vpc_id      = aws_vpc.lab.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.mi_ip]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "lab-ssh"
+  }
+}
