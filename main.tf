@@ -108,3 +108,37 @@ resource "aws_security_group" "ssh" {
     Name = "lab-ssh"
   }
 }
+
+data "aws_ami" "al2023" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+}
+
+resource "aws_instance" "lab" {
+  ami                    = data.aws_ami.al2023.id
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.public[0].id
+  vpc_security_group_ids = [aws_security_group.ssh.id]
+  key_name               = aws_key_pair.lab.key_name
+
+  metadata_options {
+    http_tokens = "required"
+  }
+
+  root_block_device {
+    encrypted = true
+  }
+
+  tags = {
+    Name = "lab-ec2"
+  }
+}
+
+output "ip_publica" {
+  value = aws_instance.lab.public_ip
+}
